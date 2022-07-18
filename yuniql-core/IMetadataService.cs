@@ -54,7 +54,7 @@ namespace Yuniql.Core
         void ConfigureDatabase(string metaSchemaName, string metaTableName, int? commandTimeout = null);
 
         /// <summary>
-        /// Updates migration version tracking table in the target database..
+        /// Updates migration version tracking table in the target database.
         /// </summary>
         /// <returns>True if target database was updated, otherwise returns false</returns>
         bool UpdateDatabaseConfiguration(string metaSchemaName, string metaTableName, int? commandTimeout = null);
@@ -64,27 +64,30 @@ namespace Yuniql.Core
         /// </summary>
         /// <param name="metaSchemaName">Schema name for schema versions table. When empty, uses the default schema in the target data platform. </param>
         /// <param name="metaTableName">Table name for schema versions table. When empty, uses __yuniql_schema_version.</param>
+        /// <param name="aspect">The aspect to query the schema versions table for or null if we use the default aspect.</param>
         /// <param name="commandTimeout">Command timeout in seconds.</param>
         /// <returns>Returns the latest version applied in the target database.</returns>
-        string GetCurrentVersion(string metaSchemaName, string metaTableName, int? commandTimeout = null);
+        string GetCurrentVersion(string metaSchemaName, string metaTableName, string aspect,int? commandTimeout = null);
 
         /// <summary>
         /// Returns all versions applied in the target database.
         /// </summary>
         /// <param name="metaSchemaName">Schema name for schema versions table. When empty, uses the default schema in the target data platform. </param>
         /// <param name="metaTableName">Table name for schema versions table. When empty, uses __yuniql_schema_version.</param>
+        /// <param name="aspect">The aspect to query the schema versions table for or null if we use the default aspect.</param>
         /// <param name="commandTimeout">Command timeout in seconds.</param>
         /// <returns>All versions applied in the target database.</returns>
-        public List<DbVersion> GetAllAppliedVersions(string metaSchemaName, string metaTableName, int? commandTimeout = null);
+        public List<DbVersion> GetAllAppliedVersions(string metaSchemaName, string metaTableName, string aspect, int? commandTimeout = null);
 
         /// <summary>
         /// Returns all versions applied in the target database.
         /// </summary>
         /// <param name="metaSchemaName">Schema name for schema versions table. When empty, uses the default schema in the target data platform. </param>
         /// <param name="metaTableName">Table name for schema versions table. When empty, uses __yuniql_schema_version.</param>
+        /// <param name="aspect">The aspect to query the schema versions table for or null if we use the default aspect.</param>
         /// <param name="commandTimeout">Command timeout in seconds.</param>
         /// <returns>All versions applied in the target database.</returns>
-        List<DbVersion> GetAllVersions(string metaSchemaName, string metaTableName, int? commandTimeout = null);
+        List<DbVersion> GetAllVersions(string metaSchemaName, string metaTableName, string aspect, int? commandTimeout = null);
 
 
         /// <summary>
@@ -96,6 +99,7 @@ namespace Yuniql.Core
         /// <param name="transactionContext">Transaction context containg last know failed version information.</param>
         /// <param name="metaSchemaName">Schema name for schema versions table. When empty, uses the default schema in the target data platform. </param>
         /// <param name="metaTableName">Table name for schema versions table. When empty, uses __yuniql_schema_version.</param>
+        /// <param name="aspect">The aspect to be migrated or null if we use the default aspect.</param>
         /// <param name="commandTimeout">Command timeout in seconds.</param>
         /// <param name="appliedByTool">The source that initiates the migration. This can be yuniql-cli, yuniql-aspnetcore or yuniql-azdevops.</param>
         /// <param name="appliedByToolVersion">The version of the source that initiates the migration.</param>
@@ -110,6 +114,7 @@ namespace Yuniql.Core
             TransactionContext transactionContext,
             string metaSchemaName,
             string metaTableName,
+            string aspect,
             int? commandTimeout = null,
             string appliedByTool = null,
             string appliedByToolVersion = null,

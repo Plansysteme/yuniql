@@ -211,9 +211,10 @@ namespace Yuniql.Core
         public string GetCurrentVersion(
             string metaSchemaName = null,
             string metaTableName = null,
+            string aspect = null,
             int? commandTimeout = null)
         {
-            var sqlStatement = GetPreparedSqlStatement(_dataService.GetSqlForGetCurrentVersion(), metaSchemaName, metaTableName);
+            var sqlStatement = GetPreparedSqlStatement(_dataService.GetSqlForGetCurrentVersion(aspect), metaSchemaName, metaTableName);
             using (var connection = _dataService.CreateConnection())
             {
                 return connection.QuerySingleString(
@@ -228,9 +229,10 @@ namespace Yuniql.Core
         public List<DbVersion> GetAllAppliedVersions(
             string metaSchemaName = null,
             string metaTableName = null,
+            string aspect = null,
             int? commandTimeout = null)
         {
-            return this.GetAllVersions(metaSchemaName, metaTableName, commandTimeout)
+            return this.GetAllVersions(metaSchemaName, metaTableName, aspect, commandTimeout)
                 .Where(x => x.Status == Status.Successful).ToList();
         }
 
@@ -238,9 +240,10 @@ namespace Yuniql.Core
         public List<DbVersion> GetAllVersions(
             string metaSchemaName = null,
             string metaTableName = null,
+            string aspect = null,
             int? commandTimeout = null)
         {
-            var sqlStatement = GetPreparedSqlStatement(_dataService.GetSqlForGetAllVersions(), metaSchemaName, metaTableName);
+            var sqlStatement = GetPreparedSqlStatement(_dataService.GetSqlForGetAllVersions(aspect), metaSchemaName, metaTableName);
             _traceService?.Debug($"Executing statement: {Environment.NewLine}{sqlStatement}");
 
             var result = new List<DbVersion>();
@@ -296,6 +299,7 @@ namespace Yuniql.Core
             TransactionContext transactionContext,
             string metaSchemaName = null,
             string metaTableName = null,
+            string aspect = null,
             int? commandTimeout = null,
             string appliedByTool = null,
             string appliedByToolVersion = null,
@@ -340,14 +344,14 @@ namespace Yuniql.Core
             };
 
             //override insert statement with upsert when targeting platforms not supporting non-transaction ddl
-            sqlStatement = _tokenReplacementService.Replace(tokens, _dataService.GetSqlForInsertVersion());
+            sqlStatement = _tokenReplacementService.Replace(tokens, _dataService.GetSqlForInsertVersion(aspect));
             var existingSavedVersion = (null!= transactionContext) && !string.IsNullOrEmpty(transactionContext.LastKnownFailedVersion) 
                 && string.Equals(transactionContext.LastKnownFailedVersion, version, StringComparison.InvariantCultureIgnoreCase);
             if (existingSavedVersion)
             {
                 sqlStatement = _dataService.IsUpsertSupported ?
-                    _tokenReplacementService.Replace(tokens, _dataService.GetSqlForUpsertVersion()) :
-                    _tokenReplacementService.Replace(tokens, _dataService.GetSqlForUpdateVersion());
+                    _tokenReplacementService.Replace(tokens, _dataService.GetSqlForUpsertVersion(aspect)) :
+                    _tokenReplacementService.Replace(tokens, _dataService.GetSqlForUpdateVersion(aspect));
             }
 
             //upsert version information

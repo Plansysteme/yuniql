@@ -15,18 +15,19 @@ namespace Yuniql.Core
         /// <param name="version"></param>
         /// <param name="metaSchemaName"></param>
         /// <param name="metaTableName"></param>
+        /// <param name="aspect"></param>
         /// <returns></returns>
-        bool IsTargetDatabaseLatest(string version, string metaSchemaName = null, string metaTableName = null);
+        bool IsTargetDatabaseLatest(string version, string metaSchemaName = null, string metaTableName = null, string aspect = null);
 
         /// <summary>
         /// Returns the current migration version applied in target database.
         /// </summary>
-        string GetCurrentVersion(string metaSchemaName = null, string metaTableName = null);
+        string GetCurrentVersion(string metaSchemaName = null, string metaTableName = null, string aspect = null);
 
         /// <summary>
         /// Returns all migration versions applied in the target database
         /// </summary>
-        List<DbVersion> GetAllVersions(string metaSchemaName = null, string metaTableName = null);
+        List<DbVersion> GetAllVersions(string metaSchemaName = null, string metaTableName = null, string aspect = null);
 
         /// <summary>
         /// Runs migrations by executing alls scripts in the workspace directory. 

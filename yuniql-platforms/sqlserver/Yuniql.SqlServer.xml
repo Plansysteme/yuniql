@@ -82,19 +82,19 @@
         <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForConfigureDatabase">
             <inheritdoc/>
         </member>
-        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForGetCurrentVersion">
+        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForGetCurrentVersion(System.String)">
             <inheritdoc/>
         </member>
-        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForGetAllVersions">
+        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForGetAllVersions(System.String)">
             <inheritdoc/>
         </member>
-        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForInsertVersion">
+        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForInsertVersion(System.String)">
             <inheritdoc/>
         </member>
-        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForUpdateVersion">
+        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForUpdateVersion(System.String)">
             <inheritdoc/>
         </member>
-        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForUpsertVersion">
+        <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForUpsertVersion(System.String)">
             <inheritdoc/>
         </member>
         <member name="M:Yuniql.SqlServer.SqlServerDataService.GetSqlForCheckRequireMetaSchemaUpgrade(System.String)">

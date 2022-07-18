@@ -128,27 +128,27 @@ namespace Yuniql.Extensibility
         /// <summary>
         /// Returns the SQL statement to use for getting the latest migration version appplied in the target database.
         /// </summary>
-        public string GetSqlForGetCurrentVersion();
+        public string GetSqlForGetCurrentVersion(string aspect);
 
         /// <summary>
         /// Returns the SQL statement to use for getting all versions applied in the target database.
         /// </summary>
-        public string GetSqlForGetAllVersions();
+        public string GetSqlForGetAllVersions(string aspect);
 
         /// <summary>
         /// Returns the SQL statement to use for creating new entry into migration tracking table.
         /// </summary>
-        public string GetSqlForInsertVersion();
+        public string GetSqlForInsertVersion(string aspect);
 
         /// <summary>
         /// Returns the SQL statement to use for updating version in migration tracking table.
         /// </summary>
-        public string GetSqlForUpdateVersion();
+        public string GetSqlForUpdateVersion(string aspect);
 
         /// <summary>
         /// Returns the SQL statement to use for merging new entry into migration tracking table.
         /// </summary>
-        public string GetSqlForUpsertVersion();
+        public string GetSqlForUpsertVersion(string aspect);
 
         //TODO: Consider dropping this in next release
         /// <summary>

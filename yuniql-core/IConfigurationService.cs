@@ -9,6 +9,8 @@ namespace Yuniql.Core
 
         void Initialize();
 
+        void Reset();
+
         void Validate();
 
         string PrintAsJson();

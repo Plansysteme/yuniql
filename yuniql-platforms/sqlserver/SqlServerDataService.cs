@@ -127,6 +127,7 @@ SELECT ISNULL(OBJECT_ID('[${YUNIQL_SCHEMA_NAME}].[__yuniqldbversion]'), 0);
 CREATE TABLE [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] (
 	[sequence_id] [SMALLINT] IDENTITY(1,1) NOT NULL,
 	[version] [NVARCHAR](512) NOT NULL,
+    [aspect] [NVARCHAR](128) NULL,
 	[applied_on_utc] [DATETIME] NOT NULL,
 	[applied_by_user] [NVARCHAR](128) NOT NULL,
 	[applied_by_tool] [NVARCHAR](32) NOT NULL,
@@ -137,37 +138,58 @@ CREATE TABLE [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] (
 	[failed_script_path] [NVARCHAR](4000) NULL,
 	[failed_script_error] [NVARCHAR](4000) NULL,
 	[additional_artifacts] [NVARCHAR](4000) NULL,
-    CONSTRAINT [PK___${YUNIQL_TABLE_NAME}] PRIMARY KEY CLUSTERED ([sequence_id] ASC),
-    CONSTRAINT [IX___${YUNIQL_TABLE_NAME}] UNIQUE NONCLUSTERED  ([version] ASC
-));
+    CONSTRAINT [PK___${YUNIQL_TABLE_NAME}] PRIMARY KEY CLUSTERED ([sequence_id] ASC));
 
 ALTER TABLE [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] ADD  CONSTRAINT [DF_${YUNIQL_TABLE_NAME}_applied_on_utc]  DEFAULT (GETUTCDATE()) FOR [applied_on_utc];
 ALTER TABLE [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] ADD  CONSTRAINT [DF_${YUNIQL_TABLE_NAME}_applied_by_user]  DEFAULT (SUSER_SNAME()) FOR [applied_by_user];
             ";
 
-        ///<inheritdoc/>
-        public string GetSqlForGetCurrentVersion()
-            => @"
-SELECT TOP 1 [version] FROM [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] WHERE status = 'Successful' ORDER BY [sequence_id] DESC;
-            ";
+        private string EscapeQuotedString(string s)
+            => s.Replace("'", "''");
 
         ///<inheritdoc/>
-        public string GetSqlForGetAllVersions()
-            => @"
+        public string GetSqlForGetCurrentVersion(string aspect)
+        {
+            string aspectPredicate = aspect == null ? "aspect IS NULL" : $"aspect = '{EscapeQuotedString(aspect)}'";
+            return @"
+SELECT TOP 1 [version] FROM [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] WHERE status = 'Successful' AND " + aspectPredicate + @" ORDER BY [sequence_id] DESC;
+            ";
+        }
+
+        ///<inheritdoc/>
+        public string GetSqlForGetAllVersions(string aspect)
+        {
+            string aspectPredicate = aspect == null ? "aspect IS NULL" : $"aspect = '{EscapeQuotedString(aspect)}'";
+
+            return @"
 SELECT [sequence_id], [version], [applied_on_utc], [applied_by_user], [applied_by_tool], [applied_by_tool_version], [status], [duration_ms], [checksum], [failed_script_path], [failed_script_error], [additional_artifacts]
-FROM [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] ORDER BY version ASC;
+FROM [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] WHERE " + aspectPredicate + @" ORDER BY version ASC;
             ";
+        }
 
         ///<inheritdoc/>
-        public string GetSqlForInsertVersion()
-            => @"
+        public string GetSqlForInsertVersion(string aspect)
+        {
+            if (aspect == null)
+            {
+                return @"
 INSERT INTO [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] ([version], [applied_on_utc], [applied_by_user], [applied_by_tool], [applied_by_tool_version], [status], [duration_ms], [checksum], [failed_script_path], [failed_script_error], [additional_artifacts]) 
 VALUES ('${YUNIQL_VERSION}', GETUTCDATE(), SUSER_SNAME(), '${YUNIQL_APPLIED_BY_TOOL}', '${YUNIQL_APPLIED_BY_TOOL_VERSION}', '${YUNIQL_STATUS}', '${YUNIQL_DURATION_MS}', '${YUNIQL_CHECKSUM}', '${YUNIQL_FAILED_SCRIPT_PATH}', '${YUNIQL_FAILED_SCRIPT_ERROR}', '${YUNIQL_ADDITIONAL_ARTIFACTS}');
             ";
+            }
+            else
+            {
+                return @"
+INSERT INTO [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}] ([version], [aspect], [applied_on_utc], [applied_by_user], [applied_by_tool], [applied_by_tool_version], [status], [duration_ms], [checksum], [failed_script_path], [failed_script_error], [additional_artifacts]) 
+VALUES ('${YUNIQL_VERSION}', '" + EscapeQuotedString(aspect) + @"', GETUTCDATE(), SUSER_SNAME(), '${YUNIQL_APPLIED_BY_TOOL}', '${YUNIQL_APPLIED_BY_TOOL_VERSION}', '${YUNIQL_STATUS}', '${YUNIQL_DURATION_MS}', '${YUNIQL_CHECKSUM}', '${YUNIQL_FAILED_SCRIPT_PATH}', '${YUNIQL_FAILED_SCRIPT_ERROR}', '${YUNIQL_ADDITIONAL_ARTIFACTS}');
+            ";
+            }
+        }
 
         ///<inheritdoc/>
-        public string GetSqlForUpdateVersion()
-            => @"
+        public string GetSqlForUpdateVersion(string aspect)
+        {
+            string updateCommand = @"
 UPDATE [${YUNIQL_SCHEMA_NAME}].[${YUNIQL_TABLE_NAME}]
 SET 	
 	[applied_on_utc]            = GETUTCDATE(),
@@ -180,11 +202,22 @@ SET
 	[failed_script_error]       = '${YUNIQL_FAILED_SCRIPT_ERROR}',
 	[additional_artifacts]      = '${YUNIQL_ADDITIONAL_ARTIFACTS}' 
 WHERE
-	[version]                   = '${YUNIQL_VERSION}';
-            ";
+	[version]                   = '${YUNIQL_VERSION}'";
+
+            if (aspect == null)
+            {
+                updateCommand += " AND [aspect] is NULL";
+            }
+            else
+            {
+                updateCommand += $" AND [aspect] = '{EscapeQuotedString(aspect)}'";
+            }
+
+            return updateCommand;
+        }
 
         ///<inheritdoc/>
-        public string GetSqlForUpsertVersion()
+        public string GetSqlForUpsertVersion(string aspect)
             => throw new NotSupportedException("Not supported for the target platform");
 
         ///<inheritdoc/>

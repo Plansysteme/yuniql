@@ -30,29 +30,29 @@ namespace Yuniql.Core
         }
 
         /// <inheritdoc />
-        public string GetCurrentVersion(string metaSchemaName = null, string metaTableName = null)
+        public string GetCurrentVersion(string metaSchemaName = null, string metaTableName = null, string aspect = null)
         {
             var configuration = _configurationService.GetConfiguration();
             if (!configuration.IsInitialized)
                 Initialize();
 
-            return _metadataService.GetCurrentVersion(metaSchemaName, metaTableName);
+            return _metadataService.GetCurrentVersion(metaSchemaName, metaTableName, aspect);
         }
 
         /// <inheritdoc />
-        public List<DbVersion> GetAllVersions(string metaSchemaName = null, string metaTableName = null)
+        public List<DbVersion> GetAllVersions(string metaSchemaName = null, string metaTableName = null, string aspect = null)
         {
             var configuration = _configurationService.GetConfiguration();
             if (!configuration.IsInitialized)
                 Initialize();
 
-            return _metadataService.GetAllVersions(metaSchemaName, metaTableName);
+            return _metadataService.GetAllVersions(metaSchemaName, metaTableName, aspect);
         }
 
         /// <inheritdoc />
-        public bool IsTargetDatabaseLatest(string targetVersion, string metaSchemaName = null, string metaTableName = null)
+        public bool IsTargetDatabaseLatest(string targetVersion, string metaSchemaName = null, string metaTableName = null, string aspect = null)
         {
-            var appliedVersions = _metadataService.GetAllAppliedVersions(metaSchemaName, metaTableName);
+            var appliedVersions = _metadataService.GetAllAppliedVersions(metaSchemaName, metaTableName, aspect);
             if (!appliedVersions.Any())
                 return false;
 

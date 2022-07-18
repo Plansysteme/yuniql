@@ -27,6 +27,11 @@ namespace Yuniql.Core
             }
         }
 
+        public void Reset()
+        {
+            IsInitialized = false;
+        }
+
         /// <summary>
         /// Returns true when global configuration has been initiatlized via configurationService.Initialize()
         /// </summary>
@@ -37,6 +42,14 @@ namespace Yuniql.Core
         /// This is a required property.
         /// </summary>
         public string Workspace { get; set; } = null;
+
+        /// <summary>
+        /// The database aspect to run the migration for. This property allows to 
+        /// migrate several aspects in the database and track their respective 
+        /// states. 
+        /// When Null, the migration runs on the default aspect.
+        /// </summary>
+        public string Aspect { get; set; } = null;
 
         /// <summary>
         /// Target database platform. Value can be `sqlserver`,`postgresql`, or `mysql`.

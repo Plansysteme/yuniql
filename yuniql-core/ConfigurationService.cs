@@ -77,6 +77,7 @@ namespace Yuniql.Core
 
             //BaseOption
             configuration.Workspace = null;
+            configuration.Aspect = null;
             configuration.IsDebug = false;
 
             //BasePlatformOption

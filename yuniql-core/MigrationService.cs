@@ -53,6 +53,7 @@ namespace Yuniql.Core
 
             Run(
                workspace: configuration.Workspace,
+               aspect: configuration.Aspect,
                targetVersion: configuration.TargetVersion,
                isAutoCreateDatabase: configuration.IsAutoCreateDatabase,
                tokens: configuration.Tokens,
@@ -88,7 +89,8 @@ namespace Yuniql.Core
             string environment = null,
             bool? isContinueAfterFailure = null,
             string transactionMode = null,
-            bool isRequiredClearedDraft = false
+            bool isRequiredClearedDraft = false,
+            string aspect = null
          )
         {
             //print run configuration information            
@@ -162,7 +164,7 @@ namespace Yuniql.Core
             TransactionContext transactionContext = null;
 
             //check for presence of failed no-transactional versions from previous runs
-            var allVersions = _metadataService.GetAllVersions(metaSchemaName, metaTableName);
+            var allVersions = _metadataService.GetAllVersions(metaSchemaName, metaTableName, aspect);
             var failedVersion = allVersions.Where(x => x.Status == Status.Failed).FirstOrDefault();
             if (failedVersion != null)
             {
@@ -188,13 +190,13 @@ namespace Yuniql.Core
                 }
             }
 
-            var appliedVersions = _metadataService.GetAllAppliedVersions(metaSchemaName, metaTableName)
+            var appliedVersions = _metadataService.GetAllAppliedVersions(metaSchemaName, metaTableName, aspect)
                 .Select(dv => dv.Version)
                 .OrderBy(v => v)
                 .ToList();
 
             //check if target database already runs the latest version and skips work if it already is
-            var targeDatabaseLatest = IsTargetDatabaseLatest(targetVersion, metaSchemaName, metaTableName);
+            var targeDatabaseLatest = IsTargetDatabaseLatest(targetVersion, metaSchemaName, metaTableName, aspect);
             if (!targeDatabaseLatest)
             {
                 //enclose all executions in a single transaction, in the event of failure we roll back everything
@@ -284,7 +286,7 @@ namespace Yuniql.Core
                 _traceService.Info($"Executed script files on {Path.Combine(workspace, RESERVED_DIRECTORY_NAME.PRE)}");
 
                 //runs all scripts int the vxx.xx folders and subfolders
-                RunVersionDirectories(connection, transaction, appliedVersions, workspace, targetVersion, transactionContext, tokens, bulkSeparator: bulkSeparator, metaSchemaName: metaSchemaName, metaTableName: metaTableName, commandTimeout: commandTimeout, bulkBatchSize: bulkBatchSize, appliedByTool: appliedByTool, appliedByToolVersion: appliedByToolVersion, environment: environment, transactionMode: transactionMode);
+                RunVersionDirectories(connection, transaction, appliedVersions, workspace, aspect, targetVersion, transactionContext, tokens, bulkSeparator: bulkSeparator, metaSchemaName: metaSchemaName, metaTableName: metaTableName, commandTimeout: commandTimeout, bulkBatchSize: bulkBatchSize, appliedByTool: appliedByTool, appliedByToolVersion: appliedByToolVersion, environment: environment, transactionMode: transactionMode);
 
                 //runs all scripts in the _draft folder and subfolders
                 RunNonVersionDirectories(connection, transaction, workspace, Path.Combine(workspace, RESERVED_DIRECTORY_NAME.DRAFT), tokens: tokens, bulkBatchSize: bulkBatchSize, bulkSeparator: bulkSeparator, commandTimeout: commandTimeout, environment: environment, transactionMode: transactionMode, isRequiredClearedDraft: isRequiredClearedDraft);
@@ -318,6 +320,7 @@ namespace Yuniql.Core
             IDbTransaction transaction,
             List<string> appliedVersions,
             string workspace,
+            string aspect,
             string targetVersion,
             TransactionContext transactionContext,
             List<KeyValuePair<string, string>> tokens = null,
@@ -382,7 +385,7 @@ namespace Yuniql.Core
 
                                     //run scripts in all sub-directories in the version
                                     var scriptSubDirectories = _directoryService.GetAllDirectories(version.Version.Path, "*").ToList(); ;
-                                    RunVersionDirectoriesInternal(internalConnection, internalTransaction, scriptSubDirectories, version.Version.Path, version.Version.Path, stopwatch);
+                                    RunVersionDirectoriesInternal(internalConnection, internalTransaction, scriptSubDirectories, version.Version.Path, version.Version.Path, aspect, stopwatch);
 
                                     internalTransaction.Commit();
                                 }
@@ -441,7 +444,7 @@ namespace Yuniql.Core
                                     //scriptSubDirectories is the child directories under _transaction directory c:\temp\vxx.xx\_transaction\list_of_directories
                                     //transactionDirectory the path of _transaction directory c:\temp\vxx.xx\_transaction
                                     //versionDirectory path of version c:\temp\vxx.xx
-                                    RunVersionDirectoriesInternal(connection, transaction, scriptSubDirectories, transactionDirectory, version.Version.Path, stopwatch);
+                                    RunVersionDirectoriesInternal(connection, transaction, scriptSubDirectories, transactionDirectory, version.Version.Path, aspect, stopwatch);
                                     transaction.Commit();
 
                                     _traceService.Info(@$"Target database has been commited after running ""{versionName}"" version scripts.");
@@ -462,7 +465,7 @@ namespace Yuniql.Core
                             //run scripts without transaction
                             //scriptSubDirectories is the child directories under _transaction directory c:\temp\vxx.xx\list_of_directories
                             //versionDirectory path of version c:\temp\vxx.xx
-                            RunVersionDirectoriesInternal(connection, transaction, scriptSubDirectories, version.Version.Path, version.Version.Path, stopwatch);
+                            RunVersionDirectoriesInternal(connection, transaction, scriptSubDirectories, version.Version.Path, version.Version.Path, aspect,stopwatch);
                         }
 
                     }
@@ -477,7 +480,7 @@ namespace Yuniql.Core
                 _traceService.Info($"Target database is updated. No migration step executed at {connectionInfo.Database} on {connectionInfo.DataSource}.");
             }
 
-            void RunVersionDirectoriesInternal(IDbConnection connection, IDbTransaction transaction, List<string> scriptSubDirectories, string scriptDirectory, string versionDirectory, Stopwatch stopwatch)
+            void RunVersionDirectoriesInternal(IDbConnection connection, IDbTransaction transaction, List<string> scriptSubDirectories, string scriptDirectory, string versionDirectory, string aspect, Stopwatch stopwatch)
             {
                 try
                 {
@@ -486,14 +489,14 @@ namespace Yuniql.Core
                     scriptSubDirectories.ForEach(scriptSubDirectory =>
                     {
                         //run all scripts in the current version folder
-                        RunVersionSqlScripts(connection, transaction, transactionContext, stopwatch, versionName, workspace, scriptSubDirectory, metaSchemaName, metaTableName, tokens, commandTimeout, environment, appliedByTool, appliedByToolVersion);
+                        RunVersionSqlScripts(connection, transaction, transactionContext, stopwatch, versionName, workspace, aspect, scriptSubDirectory, metaSchemaName, metaTableName, tokens, commandTimeout, environment, appliedByTool, appliedByToolVersion);
 
                         //import csv files into tables of the the same filename as the csv
                         RunBulkImportScripts(connection, transaction, workspace, scriptSubDirectory, bulkSeparator, bulkBatchSize, commandTimeout, environment, tokens);
                     });
 
                     //run all scripts in the current version folder
-                    RunVersionSqlScripts(connection, transaction, transactionContext, stopwatch, versionName, workspace, scriptDirectory, metaSchemaName, metaTableName, tokens, commandTimeout, environment);
+                    RunVersionSqlScripts(connection, transaction, transactionContext, stopwatch, versionName, workspace, aspect, scriptDirectory, metaSchemaName, metaTableName, tokens, commandTimeout, environment);
 
                     //import csv files into tables of the the same filename as the csv
                     RunBulkImportScripts(connection, transaction, workspace, scriptDirectory, bulkSeparator, bulkBatchSize, commandTimeout, environment, tokens);
@@ -503,6 +506,7 @@ namespace Yuniql.Core
                     _metadataService.InsertVersion(connection, transaction, versionName, transactionContext,
                         metaSchemaName: metaSchemaName,
                         metaTableName: metaTableName,
+                        aspect: aspect,
                         commandTimeout: commandTimeout,
                         appliedByTool: appliedByTool,
                         appliedByToolVersion: appliedByToolVersion,
